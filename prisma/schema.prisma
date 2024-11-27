@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  adminClerkId String?
+  username     String  @unique
+
+  @@map("admins")
+}
+
+model Student {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentClerkId String?  @unique
+  username       String   @unique
+  name           String
+  surname        String
+  email          String?  @unique
+  phone          String?  @unique
+  address        String
+  img            String?
+  bloodType      String
+  sex            UserSex
+  createdAt      DateTime @default(now())
+
+  parentId    String       @db.ObjectId
+  parent      Parent       @relation(fields: [parentId], references: [id])
+  classId     String       @db.ObjectId
+  class       Class        @relation(fields: [classId], references: [id])
+  gradeId     String       @db.ObjectId
+  grade       Grade        @relation(fields: [gradeId], references: [id])
+  attendances Attendance[]
+  results     Result[]
+  birthday    DateTime
+
+  @@map("students")
+}
+
+model Teacher {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  teacherClerkId String?  @unique
+  username       String   @unique
+  name           String
+  surname        String
+  email          String?  @unique
+  phone          String?  @unique
+  address        String
+  img            String?
+  bloodType      String
+  sex            UserSex
+  createdAt      DateTime @default(now())
+
+  subjectIds String[]  @db.ObjectId
+  subjects   Subject[] @relation(fields: [subjectIds], references: [id])
+
+  classes  Class[]
+  lessons  Lesson[]
+  birthday DateTime
+
+  @@map("teachers")
+}
+
+model Parent {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  parentClerkId String? @unique
+  username      String  @unique
+  name          String
+  surname       String
+  email         String? @unique
+  phone         String  @unique
+  address       String
+
+  students  Student[]
+  createdAt DateTime  @default(now())
+}
+
+model Grade {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  // gradeClerkId String? @unique
+  level Int    @unique
+
+  students Student[]
+  classes  Class[]
+}
+
+model Class {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  name     String @unique
+  capacity Int
+
+  supervisorId  String?        @db.ObjectId
+  supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
+  lessons       Lesson[]
+  students      Student[]
+  gradeId       String         @db.ObjectId
+  grade         Grade          @relation(fields: [gradeId], references: [id])
+  events        Event[]
+  announcements Announcement[]
+}
+
+model Subject {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+
+  teacherIds String[]  @db.ObjectId
+  teachers   Teacher[] @relation(fields: [teacherIds], references: [id])
+  lessons    Lesson[]
+}
+
+model Lesson {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // lessonClerkId String?  @unique
+  name      String
+  day       Day
+  startTime DateTime
+  endTime   DateTime
+
+  subjectId   String       @db.ObjectId
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  classId     String       @db.ObjectId
+  class       Class        @relation(fields: [classId], references: [id])
+  teacherId   String       @db.ObjectId
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  exams       Exam[]
+  assignments Assignment[]
+
+  attendances Attendance[]
+
+  @@map("lessons")
+}
+
+model Exam {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // examClerkId String?  @unique
+  title     String
+  startTime DateTime
+  endTime   DateTime
+
+  lessonId String   @db.ObjectId
+  lesson   Lesson   @relation(fields: [lessonId], references: [id])
+  results  Result[]
+}
+
+model Assignment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // assignmentClerkId String?  @unique
+  title     String
+  startDate DateTime
+  dueDate   DateTime
+
+  lessonId String   @db.ObjectId
+  lesson   Lesson   @relation(fields: [lessonId], references: [id])
+  results  Result[]
+
+  @@map("assignments")
+}
+
+model Result {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  score Int
+
+  examId       String?     @db.ObjectId
+  exam         Exam?       @relation(fields: [examId], references: [id])
+  assignmentId String?     @db.ObjectId
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  studentId    String      @db.ObjectId
+  student      Student     @relation(fields: [studentId], references: [id])
+}
+
+model Attendance {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  // attendanceClerkId String?  @unique
+  date    DateTime
+  present Boolean
+
+  studentId String  @db.ObjectId
+  student   Student @relation(fields: [studentId], references: [id])
+  lessonId  String  @db.ObjectId
+  lesson    Lesson  @relation(fields: [lessonId], references: [id])
+}
+
+model Event {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  // eventClerkId String?  @unique
+  title       String
+  description String
+  startTime   DateTime
+  endTime     DateTime
+
+  classId String? @db.ObjectId
+  class   Class?  @relation(fields: [classId], references: [id])
+}
+
+model Announcement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  // announcementClerkId String?  @unique
+  title       String
+  description String
+  date        DateTime
+
+  classId String? @db.ObjectId
+  class   Class?  @relation(fields: [classId], references: [id])
+}
+
+enum UserSex {
+  MALE
+  FEMALE
+}
+
+enum Day {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}

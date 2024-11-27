@@ -1,0 +1,75 @@
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const userRole = req.cookies.get('userRole'); // Assuming user role is stored in cookies
+
+  if (pathname.startsWith('/admin') && userRole !== 'admin') {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  if (pathname.startsWith('/users') && userRole !== 'user') {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/admin/:path*', '/users/:path*'],
+};
+
+
+// components/withAuth.tsx
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+const withAuth = (WrappedComponent: React.FC, role: string) => {
+  return (props: any) => {
+    const router = useRouter();
+    const userRole = 'user'; // Replace with actual user role fetching logic
+
+    useEffect(() => {
+      if (userRole !== role) {
+        router.push('/login');
+      }
+    }, [userRole, role, router]);
+
+    return <WrappedComponent {...props} />;
+  };
+};
+
+export default withAuth;
+
+
+
+// app/admin/dashboard/page.tsx
+import withAuth from '../../../components/withAuth';
+
+const AdminDashboard = () => {
+  return <div>Admin Dashboard</div>;
+};
+
+export default withAuth(AdminDashboard, 'admin');
+
+app/
+  ├── admin/
+  │   ├── page.tsx
+  │   ├── dashboard/
+  │   │   └── page.tsx
+  │   └── settings/
+  │       └── page.tsx
+  ├── users/
+  │   ├── page.tsx
+  │   ├── profile/
+  │   │   └── page.tsx
+  │   └── settings/
+  │       └── page.tsx
+  ├── guests/
+  │   ├── page.tsx
+  │   └── about/
+  │       └── page.tsx
+  ├── layout.tsx
+  └── page.tsx
